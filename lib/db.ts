@@ -3,11 +3,17 @@ import mysql from 'mysql2/promise';
 
 // Tambahkan kata 'export' di depan const
 export const db = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: '', // sesuaikan password database kamu
-  database: 'next_auth',
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: Number(process.env.DB_PORT) || 17312,
+
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
