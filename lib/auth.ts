@@ -1,8 +1,7 @@
-// lib/auth.ts
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/lib/db"; 
-import bcrypt from "bcrypt"; // Import ini!
+import bcrypt from "bcrypt";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -24,27 +23,49 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
-          // BANDINGKAN PASSWORD PAKAI BCRYPT
           const isPasswordMatch = await bcrypt.compare(credentials.password, user.password);
 
           if (isPasswordMatch) {
-            console.log("✅ Login Berhasil (Bcrypt Match)");
+            console.log("✅ Login Berhasil");
+            // Kembalikan objek yang bersih
             return { 
               id: user.id.toString(), 
               name: user.name, 
               email: user.email 
             };
           } else {
-            console.log("❌ Password salah (Bcrypt Mismatch)");
+            console.log("❌ Password salah");
             return null;
           }
         } catch (error) {
-          console.error("🔥 Error saat login:", error);
-          return null;
+          console.error("🔥 Error di Authorize:", error);
+          throw new Error("Internal Server Error"); // Lempar error agar ditangkap NextAuth
         }
       }
     })
   ],
-  session: { strategy: "jwt" },
+  // --- TAMBAHKAN BAGIAN INI ---
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        (session.user as any).id = token.id;
+      }
+      return session;
+    },
+  },
+  // ----------------------------
+  session: { 
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 hari
+  },
+  pages: {
+    signIn: "/login", // Pastikan mengarah ke route login kamu
+  },
   secret: process.env.NEXTAUTH_SECRET,
 };
